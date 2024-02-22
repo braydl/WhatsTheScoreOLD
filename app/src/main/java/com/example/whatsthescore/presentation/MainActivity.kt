@@ -7,12 +7,14 @@
 package com.example.whatsthescore.presentation
 
 import android.os.Bundle
+import android.util.Log
 import android.view.Surface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -72,6 +74,34 @@ fun WearApp() {
 }
 
 @Composable
+fun CourtSide(
+    row: Int,
+    col: Int
+) {
+    Box(
+        modifier = Modifier
+            .clip(RectangleShape)
+            .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
+            .size(40.dp)
+            .clickable {
+                Log.d("Main", "clicked $row $col")
+            },
+
+        contentAlignment = Alignment.Center,
+    ) {
+        // draw the ball
+        if (row == 2 && col == 1) {
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .border(1.dp, Color.Yellow, CircleShape)
+                    .size(30.dp),
+            )
+        }
+    }
+}
+
+@Composable
 fun Court() {
     Column(
         modifier = Modifier
@@ -84,23 +114,7 @@ fun Court() {
             if (row == 0 || row == 2) {
                 Row {
                     for (col in 0 .. 1) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RectangleShape)
-                                .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
-                                .size(40.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            // draw the ball
-                            if (row == 2 && col == 1) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .border(1.dp, Color.Yellow, CircleShape)
-                                        .size(30.dp),
-                                )
-                            }
-                        }
+                        CourtSide(row = row, col = col)
                     }
                 }
             }
