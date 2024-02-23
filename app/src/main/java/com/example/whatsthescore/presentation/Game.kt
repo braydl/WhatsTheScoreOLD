@@ -1,6 +1,7 @@
 package com.example.whatsthescore.presentation
 
 import java.util.Stack
+import kotlin.math.abs
 import kotlin.math.max
 
 enum class Team(val printableName: String) { YOU("You"), OPPONENT("They") }
@@ -37,9 +38,18 @@ abstract class Game {
         pushUndo()
     }
 
+    fun serverTeam(): Team {
+        return stats.serverTeam
+    }
+
+    fun serverSide(): Side {
+        return stats.serverSide
+    }
+
     // ask if the game is over
     fun isGameOver(): Boolean {
-        return max(stats.serverScore, stats.receiverScore) >= gameLength
+        return (max(stats.serverScore, stats.receiverScore) >= gameLength) &&
+                (abs(stats.serverScore - stats.receiverScore) >= 2)
     }
 
     // reset the score to zero
@@ -86,9 +96,16 @@ abstract class Game {
         stats.serverSide = Side.EVEN
     }
 
-    open fun scoreToString() : String {
-        var aResult = "${stats.serverScore}-${stats.receiverScore}"
-        if (numberPlayers > 1) {
+    open fun scoreToString(): String {
+        var aResult = ""
+        val aGameOver = isGameOver()
+        if (aGameOver) {
+            aResult = "${stats.serverTeam.printableName} Won "
+        }
+
+        aResult += "${stats.serverScore}-${stats.receiverScore}"
+
+        if (!aGameOver && numberPlayers > 1) {
             aResult += "-${stats.serverNumber}"
         }
         return aResult

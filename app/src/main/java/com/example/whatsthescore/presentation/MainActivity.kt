@@ -15,6 +15,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -28,13 +29,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
@@ -77,35 +82,6 @@ fun WearApp() {
 }
 
 @Composable
-fun CourtSide(
-    game: Game,
-    team: Team,
-    side: Side
-) {
-    Box(
-        modifier = Modifier
-            .clip(RectangleShape)
-            .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
-            .size(40.dp)
-            .clickable {
-                Log.d("Main", "clicked $team $side")
-            },
-
-        contentAlignment = Alignment.Center,
-    ) {
-        // draw the ball
-        if (team == Team.YOU && side == Side.EVEN) {
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .border(1.dp, Color.Yellow, CircleShape)
-                    .size(30.dp),
-            )
-        }
-    }
-}
-
-@Composable
 fun Court(game : Game) {
     Column(
         modifier = Modifier
@@ -113,10 +89,18 @@ fun Court(game : Game) {
             .wrapContentSize(Alignment.Center),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
- //       var score by remember { mutableStateOf("") }
-        var score = game.scoreToString()
+        // state of the game
+        var score by remember { mutableStateOf<String>(game.scoreToString()) }
+        var serverTeam by remember { mutableStateOf<Team>(game.serverTeam()) }
+        var serverSide by remember { mutableStateOf<Side>(game.serverSide()) }
+        var isGameOver by remember { mutableStateOf<Boolean>(game.isGameOver()) }
+
+        val haptics = LocalHapticFeedback.current
+
+        // draw two rows of court sides with the score text in between
         for (row in 0..2) {
             if (row == 0 || row == 2) {
+                // draw a row of two court sides
                 Row {
                     var team = Team.OPPONENT;
                     var side = Side.EVEN;
@@ -131,12 +115,59 @@ fun Court(game : Game) {
                             team = Team.YOU
                             side = if (col == 1) Side.EVEN else Side.ODD
                         }
-                        CourtSide(game = game, team = team, side = side)
+                        // draw a court side square
+                        Box(
+                            modifier = Modifier
+                                .clip(RectangleShape)
+                                .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
+                                .size(55.dp)
+                                .clickable(
+                                    enabled = !isGameOver
+                                ) {
+                                    game.rallyWonBy(team)
+                                    score = game.scoreToString()
+                                    serverTeam = game.serverTeam()
+                                    serverSide = game.serverSide()
+                                    isGameOver = game.isGameOver()
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            // draw the ball
+                            if (!isGameOver && team == serverTeam && side == serverSide) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .border(1.dp, Color.Yellow, CircleShape)
+                                        .size(40.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
             else {
-                Text(textAlign = TextAlign.Center, text = score)
+                Text(textAlign = TextAlign.Center,
+                    text = score,
+                    modifier = Modifier
+                        .clickable {
+                            game.resetGame()
+                            score = game.scoreToString()
+                            serverTeam = game.serverTeam()
+                            serverSide = game.serverSide()
+                            isGameOver = game.isGameOver()
+                        }
+//                        .combinedClickable (
+//                            enabled = true,
+//                            onLongClick = {
+//                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+//                                game.resetGame()
+//                                score = game.scoreToString()
+//                                serverTeam = game.serverTeam()
+//                                serverSide = game.serverSide()
+//                                isGameOver = game.isGameOver()
+//                            }
+//                        )
+                )
             }
         }
     }
