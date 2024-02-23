@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +62,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WearApp() {
+    var game = GameDoublesTraditional()
     WhatsTheScoreTheme {
         Box(
             modifier = Modifier
@@ -68,15 +71,16 @@ fun WearApp() {
             contentAlignment = Alignment.Center
         ) {
             TimeText()
-            Court()
+            Court(game)
         }
     }
 }
 
 @Composable
 fun CourtSide(
-    row: Int,
-    col: Int
+    game: Game,
+    team: Team,
+    side: Side
 ) {
     Box(
         modifier = Modifier
@@ -84,13 +88,13 @@ fun CourtSide(
             .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
             .size(40.dp)
             .clickable {
-                Log.d("Main", "clicked $row $col")
+                Log.d("Main", "clicked $team $side")
             },
 
         contentAlignment = Alignment.Center,
     ) {
         // draw the ball
-        if (row == 2 && col == 1) {
+        if (team == Team.YOU && side == Side.EVEN) {
             Box(
                 modifier = Modifier
                     .clip(CircleShape)
@@ -102,24 +106,37 @@ fun CourtSide(
 }
 
 @Composable
-fun Court() {
+fun Court(game : Game) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentSize(Alignment.Center),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
+ //       var score by remember { mutableStateOf("") }
+        var score = game.scoreToString()
         for (row in 0..2) {
             if (row == 0 || row == 2) {
                 Row {
+                    var team = Team.OPPONENT;
+                    var side = Side.EVEN;
                     for (col in 0 .. 1) {
-                        CourtSide(row = row, col = col)
+                        if (row == 0)
+                        {
+                            team = Team.OPPONENT
+                            side = if (col == 0) Side.EVEN else Side.ODD
+                        }
+                        else
+                        {
+                            team = Team.YOU
+                            side = if (col == 1) Side.EVEN else Side.ODD
+                        }
+                        CourtSide(game = game, team = team, side = side)
                     }
                 }
             }
             else {
-                Text(textAlign = TextAlign.Center, text = "0-0-2")
+                Text(textAlign = TextAlign.Center, text = score)
             }
         }
     }
