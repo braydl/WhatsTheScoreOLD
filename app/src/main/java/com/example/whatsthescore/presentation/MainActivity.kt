@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.Surface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +29,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +86,7 @@ fun WearApp() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Court(game : Game) {
     Column(
@@ -126,8 +132,7 @@ fun Court(game : Game) {
                                 ) {
                                     if (serverTeam == Team.NONE) {
                                         game.whoServesFirst(team)
-                                    }
-                                    else {
+                                    } else {
                                         game.rallyWonBy(team)
                                     }
                                     score = game.scoreToString()
@@ -154,31 +159,29 @@ fun Court(game : Game) {
                 Text(textAlign = TextAlign.Center,
                     text = score,
                     modifier = Modifier
-                        .clickable {
-                            game.resetGame()
-                            score = game.scoreToString()
-                            serverTeam = game.serverTeam()
-                            serverSide = game.serverSide()
-                            isGameOver = game.isGameOver()
-                        }
-//                        .combinedClickable (
-//                            enabled = true,
-//                            onLongClick = {
-//                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-//                                game.resetGame()
-//                                score = game.scoreToString()
-//                                serverTeam = game.serverTeam()
-//                                serverSide = game.serverSide()
-//                                isGameOver = game.isGameOver()
-//                            }
-//                        )
+                        .combinedClickable(
+                            onLongClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                game.resetGame()
+                                score = game.scoreToString()
+                                serverTeam = game.serverTeam()
+                                serverSide = game.serverSide()
+                                isGameOver = game.isGameOver() },
+                            onClick = { /*....*/ })
                 )
             }
         }
     }
 }
 
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+//@Composable
+//fun IconButtonExample() {
+//    IconButton(onClick = { /* do something */ }) {
+//        Icon(Icons.Filled.Check, "Check")
+//    }
+//}
+
+@Preview(device = Devices.WEAR_OS_LARGE_ROUND, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
     WearApp()
