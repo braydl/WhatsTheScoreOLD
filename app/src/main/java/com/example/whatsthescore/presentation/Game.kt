@@ -4,11 +4,11 @@ import java.util.Stack
 import kotlin.math.abs
 import kotlin.math.max
 
-enum class Team(val printableName: String) { YOU("You"), OPPONENT("They") }
+enum class Team(val printableName: String) { NONE("None"), YOU("You"), OPPONENT("They") }
 enum class Side(val printableName: String) { EVEN("even side"), ODD("odd side") }
 
 data class Stats(
-    var serverTeam: Team = Team.YOU,
+    var serverTeam: Team = Team.NONE,
     var serverSide: Side = Side.EVEN,
     var serverScore: Int = 0,
     var receiverScore: Int = 0,
@@ -28,6 +28,9 @@ abstract class Game {
     }
 
     // main API for app
+
+
+
     // tell the game who one the rally
     fun rallyWonBy(theTeam: Team) {
         if (theTeam == stats.serverTeam) {
@@ -57,6 +60,12 @@ abstract class Game {
         stats = Stats()
         undoStack.clear()
         pushUndo()
+    }
+
+    fun whoServesFirst(theTeam : Team = Team.YOU)
+    {
+        resetGame()
+        stats.serverTeam = theTeam
     }
 
     // undo
@@ -99,6 +108,11 @@ abstract class Game {
     open fun scoreToString(): String {
         var aResult = ""
         val aGameOver = isGameOver()
+
+        if (stats.serverTeam == Team.NONE) {
+            return "Who Serves First?"
+        }
+
         if (aGameOver) {
             aResult = "${stats.serverTeam.printableName} Won "
         }

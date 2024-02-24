@@ -124,7 +124,12 @@ fun Court(game : Game) {
                                 .clickable(
                                     enabled = !isGameOver
                                 ) {
-                                    game.rallyWonBy(team)
+                                    if (serverTeam == Team.NONE) {
+                                        game.whoServesFirst(team)
+                                    }
+                                    else {
+                                        game.rallyWonBy(team)
+                                    }
                                     score = game.scoreToString()
                                     serverTeam = game.serverTeam()
                                     serverSide = game.serverSide()
