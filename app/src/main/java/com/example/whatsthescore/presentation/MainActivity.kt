@@ -4,11 +4,11 @@
  * changes to the libraries and their usages.
  */
 
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.whatsthescore.presentation
 
 import android.os.Bundle
-import android.util.Log
-import android.view.Surface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -19,20 +19,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +43,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,6 +52,9 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import com.example.whatsthescore.R
 import com.example.whatsthescore.presentation.theme.WhatsTheScoreTheme
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,97 +89,129 @@ fun WearApp() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Court(game : Game) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentSize(Alignment.Center),
-        horizontalAlignment = Alignment.CenterHorizontally
+    // state of the game
+    var score by remember { mutableStateOf<String>(game.scoreToString()) }
+    var serverTeam by remember { mutableStateOf<Team>(game.serverTeam()) }
+    var serverSide by remember { mutableStateOf<Side>(game.serverSide()) }
+    var isGameOver by remember { mutableStateOf<Boolean>(game.isGameOver()) }
+    var isUndoAvailable by remember { mutableStateOf<Boolean>(game.isUndoAvailable()) }
+
+    val haptics = LocalHapticFeedback.current
+    Row(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .wrapContentSize(Alignment.Center),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // state of the game
-        var score by remember { mutableStateOf<String>(game.scoreToString()) }
-        var serverTeam by remember { mutableStateOf<Team>(game.serverTeam()) }
-        var serverSide by remember { mutableStateOf<Side>(game.serverSide()) }
-        var isGameOver by remember { mutableStateOf<Boolean>(game.isGameOver()) }
-
-        val haptics = LocalHapticFeedback.current
-
-        // draw two rows of court sides with the score text in between
-        for (row in 0..2) {
-            if (row == 0 || row == 2) {
-                // draw a row of two court sides
-                Row {
-                    var team = Team.OPPONENT;
-                    var side = Side.EVEN;
-                    for (col in 0 .. 1) {
-                        if (row == 0)
-                        {
-                            team = Team.OPPONENT
-                            side = if (col == 0) Side.EVEN else Side.ODD
+        IconButton(
+            enabled = isUndoAvailable,
+            onClick = {
+                game.undo()
+                score = game.scoreToString()
+                serverTeam = game.serverTeam()
+                serverSide = game.serverSide()
+                isGameOver = game.isGameOver()
+                isUndoAvailable = game.isUndoAvailable()
+            },
+            modifier = Modifier.size(24.dp)
+        ) {
+            Icon(
+                ImageVector.vectorResource(id = R.drawable.undo_black_24dp),
+                contentDescription = "Undo",
+                tint = MaterialTheme.colors.secondary
+                )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(
+            modifier = Modifier
+                //               .fillMaxWidth()
+                .wrapContentSize(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // draw two rows of court sides with the score text in between
+            for (row in 0..2) {
+                if (row == 0 || row == 2) {
+                    // draw a row of two court sides
+                    Row {
+                        var team = Team.OPPONENT;
+                        var side = Side.EVEN;
+                        for (col in 0..1) {
+                            if (row == 0) {
+                                team = Team.OPPONENT
+                                side = if (col == 0) Side.EVEN else Side.ODD
+                            } else {
+                                team = Team.YOU
+                                side = if (col == 1) Side.EVEN else Side.ODD
+                            }
+                            // draw a court side square
+                            Box(
+                                modifier = Modifier
+                                    .clip(RectangleShape)
+                                    .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
+                                    .size(65.dp)
+                                    .clickable(
+                                        enabled = !isGameOver
+                                    ) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        if (serverTeam == Team.NONE) {
+                                            game.whoServesFirst(team)
+                                        } else {
+                                            game.rallyWonBy(team)
+                                        }
+                                        score = game.scoreToString()
+                                        serverTeam = game.serverTeam()
+                                        serverSide = game.serverSide()
+                                        isGameOver = game.isGameOver()
+                                        isUndoAvailable = game.isUndoAvailable()
+                                    },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                // draw the ball
+                                if (!isGameOver && team == serverTeam && side == serverSide) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .border(1.dp, Color.Yellow, CircleShape)
+                                            .size(40.dp),
+                                    )
+                                }
+                            }
                         }
-                        else
-                        {
-                            team = Team.YOU
-                            side = if (col == 1) Side.EVEN else Side.ODD
-                        }
-                        // draw a court side square
-                        Box(
-                            modifier = Modifier
-                                .clip(RectangleShape)
-                                .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
-                                .size(55.dp)
-                                .clickable(
-                                    enabled = !isGameOver
-                                ) {
-                                    if (serverTeam == Team.NONE) {
-                                        game.whoServesFirst(team)
-                                    } else {
-                                        game.rallyWonBy(team)
-                                    }
+                    }
+                } else {
+                    Text(
+                        textAlign = TextAlign.Center,
+                        text = score,
+                        modifier = Modifier
+                            .combinedClickable(
+                                onLongClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    game.resetGame()
                                     score = game.scoreToString()
                                     serverTeam = game.serverTeam()
                                     serverSide = game.serverSide()
                                     isGameOver = game.isGameOver()
+                                    isUndoAvailable = game.isUndoAvailable()
                                 },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            // draw the ball
-                            if (!isGameOver && team == serverTeam && side == serverSide) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .border(1.dp, Color.Yellow, CircleShape)
-                                        .size(40.dp),
-                                )
-                            }
-                        }
-                    }
+                                onClick = { /*....*/ })
+                    )
                 }
             }
-            else {
-                Text(textAlign = TextAlign.Center,
-                    text = score,
-                    modifier = Modifier
-                        .combinedClickable(
-                            onLongClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                game.resetGame()
-                                score = game.scoreToString()
-                                serverTeam = game.serverTeam()
-                                serverSide = game.serverSide()
-                                isGameOver = game.isGameOver() },
-                            onClick = { /*....*/ })
-                )
-            }
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        IconButton(
+            enabled = false,
+            onClick = { /* ... */ },
+            modifier = Modifier.size(24.dp)
+        ) {
+            Icon(
+                Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colors.secondary
+            )
         }
     }
 }
-
-//@Composable
-//fun IconButtonExample() {
-//    IconButton(onClick = { /* do something */ }) {
-//        Icon(Icons.Filled.Check, "Check")
-//    }
-//}
 
 @Preview(device = Devices.WEAR_OS_LARGE_ROUND, showSystemUi = true)
 @Composable

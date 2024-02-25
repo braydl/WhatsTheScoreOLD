@@ -68,9 +68,16 @@ abstract class Game {
         stats.serverTeam = theTeam
     }
 
+    fun isUndoAvailable() : Boolean
+    {
+        return !undoStack.empty()
+    }
+
     // undo
     fun undo() {
-        stats = undoStack.pop()
+        if (isUndoAvailable()) {
+            stats = undoStack.pop()
+        }
     }
 
     // test it
