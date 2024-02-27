@@ -12,7 +12,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,10 +26,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,26 +40,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import com.example.whatsthescore.R
 import com.example.whatsthescore.presentation.theme.WhatsTheScoreTheme
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 
+
+val mAmbientCallback: AmbientLifecycleObserver.AmbientLifecycleCallback = object : AmbientLifecycleObserver.AmbientLifecycleCallback {
+    override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) {}
+    override fun onUpdateAmbient() {}
+    override fun onExitAmbient() {}
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
+        val ambientObserver = AmbientLifecycleObserver(this, mAmbientCallback)
+        lifecycle.addObserver(ambientObserver)
 
         setTheme(android.R.style.Theme_DeviceDefault)
 
@@ -106,6 +116,7 @@ fun Court(game : Game) {
         IconButton(
             enabled = isUndoAvailable,
             onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 game.undo()
                 score = game.scoreToString()
                 serverTeam = game.serverTeam()
@@ -182,6 +193,7 @@ fun Court(game : Game) {
                     Text(
                         textAlign = TextAlign.Center,
                         text = score,
+                        fontSize = 20.sp,
                         modifier = Modifier
                             .combinedClickable(
                                 onLongClick = {
