@@ -117,7 +117,7 @@ abstract class Game {
         val aGameOver = isGameOver()
 
         if (stats.serverTeam == Team.NONE) {
-            return "Serves First?"
+            return "Serving First?"
         }
 
         if (aGameOver) {

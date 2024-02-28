@@ -50,6 +50,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
@@ -57,31 +58,32 @@ import androidx.wear.compose.material.TimeText
 import com.example.whatsthescore.R
 import com.example.whatsthescore.presentation.theme.WhatsTheScoreTheme
 
-
-val mAmbientCallback: AmbientLifecycleObserver.AmbientLifecycleCallback = object : AmbientLifecycleObserver.AmbientLifecycleCallback {
-    override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) {}
-    override fun onUpdateAmbient() {}
-    override fun onExitAmbient() {}
-}
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
-        val ambientObserver = AmbientLifecycleObserver(this, mAmbientCallback)
-        lifecycle.addObserver(ambientObserver)
 
         setTheme(android.R.style.Theme_DeviceDefault)
 
         setContent {
-            WearApp()
+            WearApp(this, lifecycle)
         }
     }
 }
 
 @Composable
-fun WearApp() {
+fun WearApp(activity: MainActivity, lifecycle: Lifecycle) {
+
+    var isAmbient by remember { mutableStateOf<Boolean>(false) }
+    val mAmbientCallback: AmbientLifecycleObserver.AmbientLifecycleCallback = object : AmbientLifecycleObserver.AmbientLifecycleCallback {
+        override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) { isAmbient = true }
+        override fun onUpdateAmbient() {}
+        override fun onExitAmbient() { isAmbient = false }
+    }
+    val ambientObserver = AmbientLifecycleObserver(activity, mAmbientCallback)
+    lifecycle.addObserver(ambientObserver)
+
     var game = GameDoublesTraditional()
     WhatsTheScoreTheme {
         Box(
@@ -91,14 +93,14 @@ fun WearApp() {
             contentAlignment = Alignment.Center
         ) {
             TimeText()
-            Court(game)
+            Court(game, isAmbient)
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Court(game : Game) {
+fun Court(game: Game, isAmbient: Boolean) {
     // state of the game
     var score by remember { mutableStateOf<String>(game.scoreToString()) }
     var serverTeam by remember { mutableStateOf<Team>(game.serverTeam()) }
@@ -107,30 +109,37 @@ fun Court(game : Game) {
     var isUndoAvailable by remember { mutableStateOf<Boolean>(game.isUndoAvailable()) }
 
     val haptics = LocalHapticFeedback.current
+
+    val courtColor : Color = if (isAmbient ) Color.Gray else MaterialTheme.colors.primary
+    val ballColor  : Color = if (isAmbient ) Color.Gray else Color.Yellow
+    val buttonColor  : Color = MaterialTheme.colors.secondary
+
     Row(
 //        modifier = Modifier
 //            .fillMaxWidth()
 //            .wrapContentSize(Alignment.Center),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
-            enabled = isUndoAvailable,
-            onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                game.undo()
-                score = game.scoreToString()
-                serverTeam = game.serverTeam()
-                serverSide = game.serverSide()
-                isGameOver = game.isGameOver()
-                isUndoAvailable = game.isUndoAvailable()
-            },
-            modifier = Modifier.size(24.dp)
-        ) {
-            Icon(
-                ImageVector.vectorResource(id = R.drawable.undo_black_24dp),
-                contentDescription = "Undo",
-                tint = MaterialTheme.colors.secondary
+        if (isAmbient == false) {
+            IconButton(
+                enabled = isUndoAvailable,
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    game.undo()
+                    score = game.scoreToString()
+                    serverTeam = game.serverTeam()
+                    serverSide = game.serverSide()
+                    isGameOver = game.isGameOver()
+                    isUndoAvailable = game.isUndoAvailable()
+                },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    ImageVector.vectorResource(id = R.drawable.undo_black_24dp),
+                    contentDescription = "Undo",
+                    tint = buttonColor
                 )
+            }
         }
         Spacer(modifier = Modifier.width(10.dp))
         Column(
@@ -158,7 +167,11 @@ fun Court(game : Game) {
                             Box(
                                 modifier = Modifier
                                     .clip(RectangleShape)
-                                    .border(1.dp, MaterialTheme.colors.primary, RectangleShape)
+                                    .border(
+                                        1.dp,
+                                        courtColor,
+                                        RectangleShape
+                                    )
                                     .size(65.dp)
                                     .clickable(
                                         enabled = !isGameOver
@@ -182,7 +195,11 @@ fun Court(game : Game) {
                                     Box(
                                         modifier = Modifier
                                             .clip(CircleShape)
-                                            .border(1.dp, Color.Yellow, CircleShape)
+                                            .border(
+                                                1.dp,
+                                                ballColor,
+                                                CircleShape
+                                            )
                                             .size(40.dp),
                                     )
                                 }
@@ -211,16 +228,18 @@ fun Court(game : Game) {
             }
         }
         Spacer(modifier = Modifier.width(10.dp))
-        IconButton(
-            enabled = false,
-            onClick = { /* ... */ },
-            modifier = Modifier.size(24.dp)
-        ) {
-            Icon(
-                Icons.Filled.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colors.secondary
-            )
+        if (isAmbient == false) {
+            IconButton(
+                enabled = false,
+                onClick = { /* ... */ },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = buttonColor
+                )
+            }
         }
     }
 }
@@ -228,5 +247,5 @@ fun Court(game : Game) {
 @Preview(device = Devices.WEAR_OS_LARGE_ROUND, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
-    WearApp()
+   // WearApp()
 }
