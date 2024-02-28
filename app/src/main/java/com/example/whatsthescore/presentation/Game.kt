@@ -24,7 +24,6 @@ abstract class Game {
 
     init {
         println("playing to $gameLength")
-        pushUndo()
     }
 
     // main API for app
@@ -33,12 +32,12 @@ abstract class Game {
 
     // tell the game who one the rally
     fun rallyWonBy(theTeam: Team) {
+        pushUndo() // add before stats to the stack
         if (theTeam == stats.serverTeam) {
             point()
         } else {
             sideout()
         }
-        pushUndo()
     }
 
     fun serverTeam(): Team {
@@ -59,7 +58,7 @@ abstract class Game {
     fun resetGame() {
         stats = Stats()
         undoStack.clear()
-        pushUndo()
+        pushUndo() // allow undo to ask who servers first
     }
 
     fun whoServesFirst(theTeam : Team = Team.YOU)
@@ -77,6 +76,10 @@ abstract class Game {
     fun undo() {
         if (isUndoAvailable()) {
             stats = undoStack.pop()
+        }
+        else
+        {
+            resetGame()
         }
     }
 
